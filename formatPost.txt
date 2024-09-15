@@ -1,0 +1,24 @@
+POST : http://localhost:2000/api/v1/cats
+
+{
+    "name": "Sisca",
+    "breed": "Siamese",
+    "age": 3,
+    "color": "Black",
+    "description": "Friendly cat",
+    "adopted": false,
+    "latitude": 52.516275,
+    "longitude": 13.377704,
+    "location_name": "Berlin",
+    "photo_url": "http://example.com/tom.jpg",
+    "gender": "female",
+    "vaccination_status": "vaccinated"
+}
+# Menguji endpoint /test-location
+GET http://localhost:2000/test-location
+
+# Menguji endpoint /geocode
+GET "http://localhost:2000/geocode?address=Jakarta"
+
+# Menguji endpoint /reverse-geocode
+GET "http://localhost:2000/reverse-geocode?lat=1.3521&lon=103.8198"

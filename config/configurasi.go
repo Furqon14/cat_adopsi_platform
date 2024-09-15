@@ -23,16 +23,16 @@ type Config struct {
 	LocationName   string
 }
 
-var AppConfig Config
-
-// LoadConfig memuat konfigurasi dari file .env
-func LoadConfig() {
+// NewConfig adalah constructor untuk inisialisasi Config
+func NewConfig() *Config {
+	// Muat file .env jika ada
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	AppConfig = Config{
+	// Inisialisasi struct Config dengan nilai dari environment variables
+	return &Config{
 		DBDriver:       getEnv("DB_DRIVER", ""),
 		DBHost:         getEnv("DB_HOST", ""),
 		DBPort:         getEnv("DB_PORT", ""),
@@ -67,3 +67,7 @@ func getDurationEnv(key string, defaultValue int) time.Duration {
 	}
 	return time.Duration(defaultValue) * time.Hour
 }
+
+var AppConfig = struct {
+	OSMAPIEndpoint string
+}{}
