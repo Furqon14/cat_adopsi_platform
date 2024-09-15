@@ -3,14 +3,16 @@ package repository
 import (
 	"cat_adoption_platform/model"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
+	"time"
 )
 
 type CatRepository interface {
 	GetAllCats() ([]model.Cat, error)
 	GetCatByID(catID string) (*model.Cat, error)
-	CreateCat(cat *model.Cat) error
-	UpdateCat(cat *model.Cat) error
+	CreateCat(cat *model.Cat) (*model.Cat, error)
 	DeleteCat(catID string) error
 }
 type catRepository struct {
@@ -19,7 +21,9 @@ type catRepository struct {
 
 // GetAllCats mengambil semua data kucing
 func (r *catRepository) GetAllCats() ([]model.Cat, error) {
-	rows, err := r.db.Query("SELECT * FROM m_cat")
+	query := `SELECT cat_id, name, breed, age, color, description, adopted, latitude, longitude, location_name, photo_url, gender, vaccination_status, created_at, updated_at FROM m_cat`
+
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -28,16 +32,16 @@ func (r *catRepository) GetAllCats() ([]model.Cat, error) {
 	var cats []model.Cat
 	for rows.Next() {
 		var cat model.Cat
-		if err := rows.Scan(
-			&cat.CatID, &cat.Name, &cat.Breed, &cat.Age, &cat.Color,
-			&cat.Description, &cat.Adopted, &cat.Latitude, &cat.Longitude,
-			&cat.LocationName, &cat.PhotoURL, &cat.CreatedAt, &cat.UpdatedAt,
-			&cat.Gender, &cat.VaccinationStatus,
-		); err != nil {
+		if err := rows.Scan(&cat.CatID, &cat.Name, &cat.Breed, &cat.Age, &cat.Color, &cat.Description, &cat.Adopted, &cat.Latitude, &cat.Longitude, &cat.LocationName, &cat.PhotoURL, &cat.Gender, &cat.VaccinationStatus, &cat.CreatedAt, &cat.UpdatedAt); err != nil {
 			return nil, err
 		}
 		cats = append(cats, cat)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return cats, nil
 }
 
@@ -60,37 +64,46 @@ func (r *catRepository) GetCatByID(catID string) (*model.Cat, error) {
 }
 
 // CreateCat menambahkan data kucing baru
-func (r *catRepository) CreateCat(cat *model.Cat) error {
-	_, err := r.db.Exec(
-		`INSERT INTO m_cat (cat_id, name, breed, age, color, description, adopted, latitude, longitude, location_name, photo_url, created_at, updated_at, gender, vaccination_status)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-		cat.CatID, cat.Name, cat.Breed, cat.Age, cat.Color, cat.Description,
-		cat.Adopted, cat.Latitude, cat.Longitude, cat.LocationName, cat.PhotoURL,
-		cat.CreatedAt, cat.UpdatedAt, cat.Gender, cat.VaccinationStatus,
-	)
-	return err
-}
+func (r *catRepository) CreateCat(cat *model.Cat) (*model.Cat, error) {
+	query := `
+        INSERT INTO m_cat (name, breed, age, color, description, adopted, latitude, longitude, location_name, photo_url, gender, vaccination_status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING cat_id, created_at, updated_at`
 
-// UpdateCat memperbarui data kucing
-func (r *catRepository) UpdateCat(cat *model.Cat) error {
-	_, err := r.db.Exec(
-		`UPDATE m_cat SET name = $1, breed = $2, age = $3, color = $4, description = $5,
-		 adopted = $6, latitude = $7, longitude = $8, location_name = $9, photo_url = $10,
-		 updated_at = $11, gender = $12, vaccination_status = $13 WHERE cat_id = $14`,
-		cat.Name, cat.Breed, cat.Age, cat.Color, cat.Description, cat.Adopted,
-		cat.Latitude, cat.Longitude, cat.LocationName, cat.PhotoURL, cat.UpdatedAt,
-		cat.Gender, cat.VaccinationStatus, cat.CatID,
-	)
-	return err
+	row := r.db.QueryRow(query, cat.Name, cat.Breed, cat.Age, cat.Color, cat.Description, cat.Adopted, cat.Latitude, cat.Longitude, cat.LocationName, cat.PhotoURL, cat.Gender, cat.VaccinationStatus, time.Now(), time.Now())
+
+	if err := row.Scan(&cat.CatID, &cat.CreatedAt, &cat.UpdatedAt); err != nil {
+		// Tambahkan log untuk melacak error
+		fmt.Println("Error inserting cat in repository:", err)
+		return nil, err
+	}
+
+	return cat, nil
 }
 
 // DeleteCat menghapus data kucing berdasarkan ID
 func (r *catRepository) DeleteCat(catID string) error {
-	_, err := r.db.Exec("DELETE FROM m_cat WHERE cat_id = $1", catID)
-	return err
+	query := "DELETE FROM m_cat WHERE cat_id = $1"
+	result, err := r.db.Exec(query, catID)
+	if err != nil {
+		log.Println("Error deleting cat in repository:", err)
+		return err
+	}
+
+	// Periksa apakah ada row yang terhapus
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("Error checking rows affected:", err)
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no rows affected, cat not found")
+	}
+
+	return nil
 }
 
-func NewCatRepository(db *sql.DB) catRepository {
-	return &catRepository{
-		db: db}
+func NewCatRepository(db *sql.DB) CatRepository {
+	return &catRepository{db: db}
 }
