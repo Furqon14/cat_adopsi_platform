@@ -4,6 +4,7 @@ import (
 	"cat_adoption_platform/model"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -69,6 +70,19 @@ func (r *reviewRepository) GetByID(reviewId uuid.UUID) (model.Review, error) {
 func (r *reviewRepository) Update(payload model.Review) (model.Review, error) {
 	var review model.Review
 
+	query := `
+        UPDATE t_review
+        SET rating = $1, comment = $2, updated_at = $3
+        WHERE review_id = $4
+        RETURNING review_id, user_id, cat_id, rating, comment, created_at, updated_at
+    `
+
+	err := r.db.QueryRow(query, payload.Rating, payload.Comment, time.Now(), payload.ReviewID).Scan(&review.ReviewID, &review.UserID, &review.CatID, &review.Rating, &review.Comment, &review.CreatedAt, &review.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return model.Review{}, fmt.Errorf("review not found")
+	} else if err != nil {
+		return model.Review{}, err
+	}
 	return review, nil
 }
 
