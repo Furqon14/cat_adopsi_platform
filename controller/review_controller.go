@@ -96,7 +96,7 @@ func (c *reviewController) Delete(ctx *gin.Context) {
 		return
 	}
 
-	ctx.Status(http.StatusNoContent)
+	ctx.JSON(http.StatusOK, "success, review deleted successfully")
 }
 
 func (c *reviewController) GetAll(ctx *gin.Context) {

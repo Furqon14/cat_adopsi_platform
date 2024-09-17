@@ -87,7 +87,24 @@ func (r *reviewRepository) Update(payload model.Review) (model.Review, error) {
 }
 
 func (r *reviewRepository) Delete(reviewId uuid.UUID) error {
-	fmt.Println("reviewId: ", reviewId)
+	query := `
+        DELETE FROM t_review
+        WHERE review_id = $1
+    `
+
+	result, err := r.db.Exec(query, reviewId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("review not found")
+	}
 
 	return nil
 }
