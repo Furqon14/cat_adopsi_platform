@@ -17,6 +17,7 @@ import (
 type Server struct {
 	cr     service.CatResty
 	cs     service.CatService
+	rs     service.ReviewService
 	engine *gin.Engine
 }
 
@@ -24,6 +25,7 @@ func (s *Server) initiateRoute() {
 	routerGroup := s.engine.Group("/api/v1")
 	controller.NewCatController(&s.cs, routerGroup).Route()
 	controller.NewCatControllerApi(&s.cr, routerGroup).Route() // Pastikan ini sesuai dengan definisi Route
+	controller.NewReviewController(s.rs, routerGroup).Route()
 }
 
 func (s *Server) Start() {
@@ -47,5 +49,13 @@ func NewServer() *Server {
 
 	crService := service.NewRestyService()
 
-	return &Server{cs: csService, cr: crService, engine: gin.Default()}
+	rsRepo := repository.NewReviewRepository(db)
+	rsService := service.NewReviewService(rsRepo)
+
+	return &Server{
+		cs:     csService,
+		cr:     crService,
+		rs:     rsService,
+		engine: gin.Default(),
+	}
 }
