@@ -3,9 +3,11 @@ package controller
 import (
 	"cat_adoption_platform/model"
 	"cat_adoption_platform/service"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type reviewController struct {
@@ -23,9 +25,9 @@ func NewReviewController(service service.ReviewService, rg *gin.RouterGroup) *re
 func (c *reviewController) Route() {
 	router := c.rg.Group("/review")
 	router.POST("", c.Create)
-	router.GET("/:id", c.GetByID)
-	router.PUT("/:id", c.Update)
-	router.DELETE("/:id", c.Delete)
+	router.GET("/:review_id", c.GetByID)
+	router.PUT("/:review_id", c.Update)
+	router.DELETE("/:review_id", c.Delete)
 	router.GET("", c.GetAll)
 }
 
@@ -37,7 +39,7 @@ func (c *reviewController) Create(ctx *gin.Context) {
 	}
 	createdReview, err := c.service.Create(review)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create review"})
+		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -45,7 +47,12 @@ func (c *reviewController) Create(ctx *gin.Context) {
 }
 
 func (c *reviewController) GetByID(ctx *gin.Context) {
-	reviewId := ctx.Param("review_id")
+	reviewId, err := uuid.Parse(ctx.Param("review_id"))
+	if err != nil {
+		fmt.Println(err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid review ID"})
+		return
+	}
 	review, err := c.service.GetByID(reviewId)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Review not found"})
@@ -56,7 +63,11 @@ func (c *reviewController) GetByID(ctx *gin.Context) {
 }
 
 func (c *reviewController) Update(ctx *gin.Context) {
-	reviewId := ctx.Param("review_id")
+	reviewId, err := uuid.Parse(ctx.Param("review_id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid review ID"})
+		return
+	}
 	var updatedReview model.Review
 	if err := ctx.ShouldBindJSON(&updatedReview); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -64,7 +75,7 @@ func (c *reviewController) Update(ctx *gin.Context) {
 	}
 
 	updatedReview.ReviewID = reviewId
-	_, err := c.service.Update(updatedReview)
+	_, err = c.service.Update(updatedReview)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update review"})
 		return
@@ -74,8 +85,12 @@ func (c *reviewController) Update(ctx *gin.Context) {
 }
 
 func (c *reviewController) Delete(ctx *gin.Context) {
-	reviewId := ctx.Param("review_id")
-	err := c.service.Delete(reviewId)
+	reviewId, err := uuid.Parse(ctx.Param("review_id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid review ID"})
+		return
+	}
+	err = c.service.Delete(reviewId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete review"})
 		return
@@ -87,7 +102,8 @@ func (c *reviewController) Delete(ctx *gin.Context) {
 func (c *reviewController) GetAll(ctx *gin.Context) {
 	reviews, err := c.service.GetAll()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get all reviews"})
+		fmt.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

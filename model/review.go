@@ -2,12 +2,14 @@ package model
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Review struct {
-	ReviewID  string    `json:"review_id"`
-	UserID    string    `json:"user_id"`
-	CatID     string    `json:"cat_id"`
+	ReviewID  uuid.UUID `json:"review_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	CatID     uuid.UUID `json:"cat_id"`
 	Rating    int       `json:"rating"`
 	Comment   string    `json:"comment"`
 	CreatedAt time.Time `json:"created_at"`

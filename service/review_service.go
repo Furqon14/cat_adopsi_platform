@@ -3,13 +3,15 @@ package service //
 import (
 	"cat_adoption_platform/model"
 	"cat_adoption_platform/repository"
+
+	"github.com/google/uuid"
 )
 
 type ReviewService interface {
 	Create(review model.Review) (model.Review, error)
-	GetByID(id string) (model.Review, error)
+	GetByID(id uuid.UUID) (model.Review, error)
 	Update(review model.Review) (model.Review, error)
-	Delete(id string) error
+	Delete(id uuid.UUID) error
 	GetAll() ([]model.Review, error)
 }
 
@@ -25,7 +27,7 @@ func (s *reviewService) Create(review model.Review) (model.Review, error) {
 	return s.reviewRepository.Create(review)
 }
 
-func (s *reviewService) GetByID(id string) (model.Review, error) {
+func (s *reviewService) GetByID(id uuid.UUID) (model.Review, error) {
 	return s.reviewRepository.GetByID(id)
 }
 
@@ -33,7 +35,7 @@ func (s *reviewService) Update(review model.Review) (model.Review, error) {
 	return s.reviewRepository.Update(review)
 }
 
-func (s *reviewService) Delete(id string) error {
+func (s *reviewService) Delete(id uuid.UUID) error {
 	return s.reviewRepository.Delete(id)
 }
 
