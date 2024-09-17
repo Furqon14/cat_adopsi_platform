@@ -27,12 +27,14 @@ type ReverseGeocodingResponse struct {
 }
 
 // CatRestyService implementasi dari CatResty
-type CatRestyService struct{}
+type CatRestyService struct {
+	cfg config.OsmApiConfig
+}
 
 // Geocode menghubungi OSM API untuk mendapatkan koordinat lokasi dari alamat
 func (s *CatRestyService) Geocode(address string) (lat, lon, locationName string, err error) {
 	client := resty.New()
-	cfg := config.AppConfig
+	cfg := s.cfg
 	url := fmt.Sprintf("%s/search", cfg.OSMAPIEndpoint)
 
 	resp, err := client.R().

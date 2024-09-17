@@ -3,12 +3,12 @@ package main
 import (
 	"cat_adoption_platform/config"
 	"cat_adoption_platform/controller"
+	"cat_adoption_platform/middleware"
+	"cat_adoption_platform/repository"
 	"cat_adoption_platform/service"
 	"database/sql"
 	"fmt"
 	"log"
-
-	"cat_adoption_platform/repository"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -18,6 +18,8 @@ type Server struct {
 	cr     service.CatResty
 	cs     service.CatService
 	rs     service.ReviewService
+	js     service.JwtService
+	am     middleware.AuthMiddleware
 	engine *gin.Engine
 }
 
@@ -35,7 +37,7 @@ func (s *Server) Start() {
 
 func NewServer() *Server {
 	// Panggil constructor NewConfig untuk memuat konfigurasi dari file .env
-	cfg := config.NewConfig()
+	cfg, _ := config.NewConfig()
 
 	// Inisialisasi koneksi ke database
 	db, err := sql.Open(cfg.DBDriver, fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -52,10 +54,15 @@ func NewServer() *Server {
 	rsRepo := repository.NewReviewRepository(db)
 	rsService := service.NewReviewService(rsRepo)
 
+	jwtService := service.NewJwtService(cfg.JwtConfig)
+	authMiddleware := middleware.NewAuthMiddleware(jwtService)
+
 	return &Server{
 		cs:     csService,
 		cr:     crService,
 		rs:     rsService,
+		js:     jwtService,
+		am:     authMiddleware,
 		engine: gin.Default(),
 	}
 }
