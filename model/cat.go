@@ -1,6 +1,7 @@
 package model
 
 import (
+	"mime/multipart"
 	"time"
 )
 
@@ -20,4 +21,17 @@ type Cat struct {
 	UpdatedAt         time.Time `json:"updated_at"`
 	Gender            string    `json:"gender"`
 	VaccinationStatus string    `json:"vaccination_status"`
+}
+
+type FormUploadImages struct {
+	Image     multipart.FileHeader `form:"file"`
+	ImageData CatImage             `form:"image_data"`
+}
+
+type CatImage struct {
+	ID        string `json:"id"`
+	CatID     string `json:"cat_id"`
+	URL       string `json:"url"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }

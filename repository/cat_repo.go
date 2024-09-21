@@ -14,9 +14,19 @@ type CatRepository interface {
 	GetCatByID(catID string) (*model.Cat, error)
 	CreateCat(cat *model.Cat) (*model.Cat, error)
 	DeleteCat(catID string) error
+	PostImages(payload []model.CatImage) ([]model.CatImage, error)
 }
 type catRepository struct {
 	db *sql.DB
+}
+
+func (r *catRepository) PostImages(payload []model.CatImage) ([]model.CatImage, error) {
+	// query := `INSERT INTO t_cat_image (id, cat_id, image_url, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, cat_id, image_url, created_at, updated_at`
+	// err := r.db.QueryRow(query, payload.ID, payload.CatID, payload.URL).Scan(&payload.ID, &payload.CatID, &payload.URL, &payload.CreatedAt, &payload.UpdatedAt)
+	// if err != nil && err != sql.ErrNoRows {
+	// 	log.Fatal(err)
+	// }
+	return payload, nil
 }
 
 // GetAllCats mengambil semua data kucing

@@ -4,10 +4,15 @@ import (
 	"cat_adoption_platform/model"
 	"cat_adoption_platform/service"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 type CatController struct {
@@ -80,12 +85,83 @@ func (c *CatController) DeleteCat(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Cat deleted successfully"})
 }
 
+func (c *CatController) UploadImages(ctx *gin.Context) {
+	catID := ctx.Param("id")
+
+	err := ctx.Request.ParseMultipartForm(10 << 20) // 10MB
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error2": err.Error()})
+		return
+	}
+
+	// Retrieve file from form data
+	files := ctx.Request.MultipartForm.File["file"]
+	if len(files) == 0 {
+		ctx.JSON(http.StatusBadRequest, "No files uploaded")
+		return
+	}
+
+	// generate cat_id
+	var catDatas []model.CatImage
+
+	for _, fileHeader := range files {
+		var catData model.CatImage
+		file, err := fileHeader.Open()
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error3": err.Error()})
+			return
+		}
+		defer file.Close()
+
+		// Generate a new filename
+		uuid := uuid.New().String()
+		ext := filepath.Ext(fileHeader.Filename)
+		newFilename := fmt.Sprintf("%s_%s%s", catID, uuid, ext)
+
+		// Save the file to the server (optional)
+		out, err := os.Create(filepath.Join("images", newFilename))
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error4": err.Error()})
+			return
+		}
+		defer out.Close()
+
+		_, err = io.Copy(out, file)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error5": err.Error()})
+			return
+		}
+
+		err = godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file: ")
+		}
+
+		catData.ID = uuid
+		catData.CatID = catID
+		catData.URL = fmt.Sprintf("%s/images/%s", os.Getenv("URL"), newFilename)
+		catDatas = append(catDatas, catData)
+
+	}
+
+	dataImages, err := c.service.PostCatImages(catDatas)
+	if err != nil {
+		log.Println("error post data image:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed post cat_images"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dataImages)
+
+}
+
 func (u *CatController) Route() {
 	router := u.rg.Group("/cats")
 	router.GET("", u.GetAllCats)
 	router.GET("/:id", u.GetCatByID)
 	router.POST("", u.CreateCat)
 	router.DELETE("/:id", u.DeleteCat)
+	router.POST("/upload-images/:id", u.UploadImages)
 }
 
 func NewCatController(service *service.CatService, rg *gin.RouterGroup) *CatController {

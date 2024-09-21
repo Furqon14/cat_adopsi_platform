@@ -9,6 +9,8 @@ require (
 	github.com/lib/pq v1.10.9
 )
 
+require github.com/veritrans/go-midtrans v0.0.0-20210616100512-16326c5eeb00 // indirect
+
 require (
 	github.com/bytedance/sonic v1.12.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect

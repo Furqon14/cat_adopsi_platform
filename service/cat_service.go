@@ -11,10 +11,15 @@ type CatService interface {
 	GetCatByID(id string) (*model.Cat, error)
 	CreateCat(cat *model.Cat) (*model.Cat, error)
 	DeleteCat(id string) error
+	PostCatImages(payload []model.CatImage) ([]model.CatImage, error)
 }
 
 type catService struct {
 	repo repository.CatRepository
+}
+
+func (s *catService) PostCatImages(payload []model.CatImage) ([]model.CatImage, error) {
+	return s.repo.PostImages(payload)
 }
 
 // GetAllCats mengambil semua data kucing
